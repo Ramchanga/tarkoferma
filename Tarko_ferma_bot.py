@@ -16,7 +16,7 @@ logging.basicConfig(
 
 TOKEN = '7302385733:AAFduy80LAJRgFaGdrZr5ZRsYrASHdYY93Y'  # Ваш токен бота
 CHANNEL_USERNAME = '@tarkotest'  # Имя пользователя вашего канала
-ADMIN_IDS = [359406176, 123456789]  # Список user ID администраторов
+ADMIN_IDS = [359406176, 195719447]  # Список user ID администраторов
 
 bot = Bot(token=TOKEN)
 
