@@ -2,7 +2,7 @@ import logging
 import nest_asyncio
 import asyncio
 from telegram import Update, Bot
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, ConversationHandler, MessageHandler, filters
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
 import random
 import os
 import json
@@ -16,7 +16,7 @@ logging.basicConfig(
 
 TOKEN = '7302385733:AAFduy80LAJRgFaGdrZr5ZRsYrASHdYY93Y'  # Ваш токен бота
 CHANNEL_USERNAME = '@tarkotest'  # Имя пользователя вашего канала
-ADMIN_IDS = [359406176, 195719447]  # Список user ID администраторов
+ADMIN_IDS = [359406176, 123456789]  # Список user ID администраторов
 
 bot = Bot(token=TOKEN)
 
@@ -86,23 +86,32 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if stage == 'text':
         context.user_data['publish_text'] = update.message.text
         context.user_data['publish_stage'] = 'image'
-        await update.message.reply_text('Теперь отправьте изображение для публикации.')
+        await update.message.reply_text('Теперь отправьте изображение для публикации, если вы не хотите прикреплять изображение отправьте "пропустить".')
     elif stage == 'image':
         if update.message.photo:
             context.user_data['publish_image'] = update.message.photo[-1].file_id
             context.user_data['publish_stage'] = 'date'
             await update.message.reply_text('Напишите дату в формате дд.мм.гггг')
+        elif update.message.text.lower() == 'пропустить':
+            context.user_data['publish_image'] = None
+            context.user_data['publish_stage'] = 'date'
+            await update.message.reply_text('Напишите дату в формате дд.мм.гггг')
         else:
-            await update.message.reply_text('Пожалуйста, отправьте изображение.')
+            await update.message.reply_text('Пожалуйста, отправьте изображение или отправьте "пропустить".')
     elif stage == 'date':
         date_text = update.message.text
         try:
-            date_drawing = datetime.strptime(date_text, '%d.%m.%Y').strftime('%d.%m.%Y')
+            date_drawing = datetime.strptime(date_text, '%d.%m.%Y').strftime('%d.%м.%Y')
             context.user_data['publish_date'] = date_drawing
             text = context.user_data['publish_text']
-            image = context.user_data['publish_image']
+            image = context.user_data.get('publish_image')
             deep_link = f"https://t.me/{context.bot.username}?start=priz"
-            await context.bot.send_photo(chat_id=CHANNEL_USERNAME, photo=image, caption=f"{text}\n\nЧтобы участвовать в конкурсе переходите по ссылке и следуйте инструкциям: [сюда]({deep_link}).", parse_mode='Markdown')
+
+            if image:
+                await context.bot.send_photo(chat_id=CHANNEL_USERNAME, photo=image, caption=f"{text}\n\nЧтобы участвовать в конкурсе переходите по ссылке и следуйте инструкциям: [сюда]({deep_link}).", parse_mode='Markdown')
+            else:
+                await context.bot.send_message(chat_id=CHANNEL_USERNAME, text=f"{text}\n\nЧтобы участвовать в конкурсе переходите по ссылке и следуйте инструкциям: [сюда]({deep_link}).", parse_mode='Markdown')
+
             save_participants(date_drawing)  # Сохраняем текущих участников
             await update.message.reply_text(f"Конкурс опубликован. Дата розыгрыша: {date_drawing}")
             logging.info(f"Published participation link in channel {CHANNEL_USERNAME}")
