@@ -10,14 +10,13 @@ from datetime import datetime
 
 # Настройка логирования
 logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelень) - %(message)s',
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
 
 TOKEN = '7302385733:AAFduy80LAJRgFaGdrZr5ZRsYrASHdYY93Y'  # Ваш токен бота
 CHANNEL_USERNAME = '@tarkotest'  # Имя пользователя вашего канала
-CHANNEL_ID = -1002151461693  # Ваш полученный Channel ID
-ADMIN_ID = 359406176  # Ваш user ID
+ADMIN_IDS = [359406176, 195719447]  # Список user ID администраторов
 
 bot = Bot(token=TOKEN)
 
@@ -53,7 +52,7 @@ def save_participants(date):
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message.from_user
-    if user.id == ADMIN_ID:
+    if user.id in ADMIN_IDS:
         await update.message.reply_text('Привет, администратор! Используйте /publish для публикации ссылки на участие в розыгрыше.')
     else:
         args = context.args
@@ -68,7 +67,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def publish(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global date_drawing
     user = update.message.from_user
-    if user.id != ADMIN_ID:
+    if user.id not in ADMIN_IDS:
         await update.message.reply_text('У вас нет прав для использования этой команды.')
         return
 
@@ -103,10 +102,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             text = context.user_data['publish_text']
             image = context.user_data['publish_image']
             deep_link = f"https://t.me/{context.bot.username}?start=priz"
-            await context.bot.send_photo(chat_id=CHANNEL_ID, photo=image, caption=f"{text}\n\nЧтобы участвовать в конкурсе переходите по ссылке и следуйте инструкциям: [сюда]({deep_link}).", parse_mode='Markdown')
+            await context.bot.send_photo(chat_id=CHANNEL_USERNAME, photo=image, caption=f"{text}\n\nЧтобы участвовать в конкурсе переходите по ссылке и следуйте инструкциям: [сюда]({deep_link}).", parse_mode='Markdown')
             save_participants(date_drawing)  # Сохраняем текущих участников
             await update.message.reply_text(f"Конкурс опубликован. Дата розыгрыша: {date_drawing}")
-            logging.info(f"Published participation link in channel {CHANNEL_ID}")
+            logging.info(f"Published participation link in channel {CHANNEL_USERNAME}")
             context.user_data['publish_stage'] = None  # Сброс этапа публикации
         except ValueError:
             await update.message.reply_text('Неверный формат даты. Попробуйте снова.')
@@ -115,7 +114,7 @@ async def priz(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global date_drawing
     user = update.message.from_user
     try:
-        member = await context.bot.get_chat_member(CHANNEL_ID, user.id)
+        member = await context.bot.get_chat_member(CHANNEL_USERNAME, user.id)
         if member.status not in ['member', 'administrator', 'creator']:
             await update.message.reply_text(f"Вы должны быть подписаны на канал {CHANNEL_USERNAME}, чтобы участвовать в розыгрыше.")
             logging.info(f"User {user.id} is not a member of the channel")
@@ -138,7 +137,7 @@ async def priz(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def draw(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    if user.id != ADMIN_ID:
+    if user.id not in ADMIN_IDS:
         await update.message.reply_text('У вас нет прав для использования этой команды.')
         return
 
@@ -173,12 +172,16 @@ async def draw(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    if user.id != ADMIN_ID:
+    if user.id not in ADMIN_IDS:
         await update.message.reply_text('У вас нет прав для использования этой команды.')
         return
 
     await update.message.reply_text(f'Всего участников: {len(participants)}')
     logging.info(f"Total participants: {len(participants)}")
+
+async def get_user_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.message.from_user
+    await update.message.reply_text(f"Ваш ID: {user.id}")
 
 async def main():
     application = ApplicationBuilder().token(TOKEN).build()
@@ -190,6 +193,7 @@ async def main():
     application.add_handler(CommandHandler("priz", priz))
     application.add_handler(CommandHandler("draw", draw))
     application.add_handler(CommandHandler("status", status))
+    application.add_handler(CommandHandler("get_user_id", get_user_id))
 
     logging.info("Starting polling...")
     await application.run_polling()
