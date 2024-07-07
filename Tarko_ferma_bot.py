@@ -101,16 +101,16 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif stage == 'date':
         date_text = update.message.text
         try:
-            date_drawing = datetime.strptime(date_text, '%d.%m.%Y').strftime('%d.%м.%Y')
+            date_drawing = datetime.strptime(date_text, '%d.%m.%Y').strftime('%d.%m.%Y')
             context.user_data['publish_date'] = date_drawing
             text = context.user_data['publish_text']
             image = context.user_data.get('publish_image')
             deep_link = f"https://t.me/{context.bot.username}?start=priz"
 
             if image:
-                await context.bot.send_photo(chat_id=CHANNEL_USERNAME, photo=image, caption=f"{text}\n\nЧтобы участвовать в конкурсе переходите по ссылке и следуйте инструкциям: [сюда]({deep_link}).", parse_mode='Markdown')
+                await context.bot.send_photo(chat_id=CHANNEL_USERNAME, photo=image, caption=f"{text}\n\nЧтобы участвовать в конкурсе переходите по [ЭТОЙ ССЫЛКЕ]({deep_link})  и следуйте инструкциям.", parse_mode='Markdown')
             else:
-                await context.bot.send_message(chat_id=CHANNEL_USERNAME, text=f"{text}\n\nЧтобы участвовать в конкурсе переходите по ссылке и следуйте инструкциям: [сюда]({deep_link}).", parse_mode='Markdown')
+                await context.bot.send_message(chat_id=CHANNEL_USERNAME, text=f"{text}\n\nЧтобы участвовать в конкурсе переходите по [ЭТОЙ ССЫЛКЕ]({deep_link}) и следуйте инструкциям.", parse_mode='Markdown')
 
             save_participants(date_drawing)  # Сохраняем текущих участников
             await update.message.reply_text(f"Конкурс опубликован. Дата розыгрыша: {date_drawing}")
